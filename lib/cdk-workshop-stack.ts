@@ -7,13 +7,14 @@ import * as path from "path";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import { Asset } from "aws-cdk-lib/aws-s3-assets";
 import { Construct } from "constructs";
+import { CfnApp, CfnBranch } from "aws-cdk-lib/aws-amplify";
 
 export class CdkWorkshopStack extends cdk.Stack {
   constructor(scope: cdk.App, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
     // defines an AWS Lambda resource
-    const hello = new lambda.Function(this, "HelloHandler", {
+    /* const hello = new lambda.Function(this, "HelloHandler", {
       runtime: lambda.Runtime.NODEJS_14_X, // execution environment
       code: lambda.Code.fromAsset("lambda"), // code loaded from "lambda" directory
       handler: "hello.handler", // file is "hello", function is "handler"
@@ -23,9 +24,9 @@ export class CdkWorkshopStack extends cdk.Stack {
     new apigw.LambdaRestApi(this, "Endpoint", {
       handler: hello,
     });
-
+    */
     // 👇 create bucket
-    const s3Bucket = new s3.Bucket(this, "s3-bucket", {
+    /*  const s3Bucket = new s3.Bucket(this, "s3-bucket", {
       // bucketName: 'my-bucket',
       removalPolicy: cdk.RemovalPolicy.DESTROY,
       autoDeleteObjects: true,
@@ -56,10 +57,11 @@ export class CdkWorkshopStack extends cdk.Stack {
         },
       ],
     });
-
+    */
     // 👇 grant access to bucket
-    s3Bucket.grantRead(new iam.AccountRootPrincipal());
+    // s3Bucket.grantRead(new iam.AccountRootPrincipal());
 
+    /*
     //for EC2
     // Create new VPC with 2 Subnets
     const vpc = new ec2.Vpc(this, "VPC", {
@@ -140,6 +142,18 @@ export class CdkWorkshopStack extends cdk.Stack {
       value:
         "ssh -i cdk-key.pem -o IdentitiesOnly=yes ec2-user@" +
         ec2Instance.instancePublicIp,
+    });*/
+
+    /*AWS Amplify */
+    const amplifyApp = new CfnApp(this, "test-app", {
+      name: "your-amplify-console-app-name",
+      repository: "<github-repository-link>",
+      oauthToken: "<github-oauth-token>",
+    });
+
+    new CfnBranch(this, "MasterBranch", {
+      appId: amplifyApp.attrAppId,
+      branchName: "main", // you can put any branch here (careful, it will listen to changes on this branch)
     });
   }
 }
