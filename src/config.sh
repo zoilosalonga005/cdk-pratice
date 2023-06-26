@@ -6,4 +6,4 @@ sudo apt update
 sudo apt install nginx -y
 sudo ufw allow 'Nginx HTTP'
 cd /var/www/html
-mkdir myagent && cd myagent
+mkdir myagent && cd myagent 
