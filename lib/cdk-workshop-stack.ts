@@ -1,4 +1,5 @@
 import * as cdk from "aws-cdk-lib";
+import { App } from "aws-cdk-lib";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as apigw from "aws-cdk-lib/aws-apigateway";
 import * as s3 from "aws-cdk-lib/aws-s3";
@@ -8,6 +9,9 @@ import * as ec2 from "aws-cdk-lib/aws-ec2";
 import { Asset } from "aws-cdk-lib/aws-s3-assets";
 import { Construct } from "constructs";
 import { CfnApp, CfnBranch } from "aws-cdk-lib/aws-amplify";
+import { StackProps } from "aws-cdk-lib";
+import * as rds from "aws-cdk-lib/aws-rds";
+import * as secretsmanager from "aws-cdk-lib/aws-secretsmanager";
 
 export class CdkWorkshopStack extends cdk.Stack {
   constructor(scope: cdk.App, id: string, props?: cdk.StackProps) {
@@ -61,7 +65,6 @@ export class CdkWorkshopStack extends cdk.Stack {
     // 👇 grant access to bucket
     // s3Bucket.grantRead(new iam.AccountRootPrincipal());
 
-    /*
     //for EC2
     // Create new VPC with 2 Subnets
     const vpc = new ec2.Vpc(this, "VPC", {
@@ -87,6 +90,24 @@ export class CdkWorkshopStack extends cdk.Stack {
       "Allow SSH Access"
     );
 
+    securityGroup.addIngressRule(
+      ec2.Peer.anyIpv4(),
+      ec2.Port.tcp(80),
+      "Allow HTTP Access"
+    );
+
+    securityGroup.addIngressRule(
+      ec2.Peer.anyIpv4(),
+      ec2.Port.tcp(443),
+      "Allow HTTPS Access"
+    );
+
+    securityGroup.addIngressRule(
+      ec2.Peer.anyIpv4(),
+      ec2.Port.tcp(3000),
+      "Allow Express JS Port"
+    );
+
     const role = new iam.Role(this, "ec2Role", {
       assumedBy: new iam.ServicePrincipal("ec2.amazonaws.com"),
     });
@@ -101,14 +122,25 @@ export class CdkWorkshopStack extends cdk.Stack {
       cpuType: ec2.AmazonLinuxCpuType.ARM_64,
     });
 
+    const userData = ec2.UserData.forLinux();
+    userData.addCommands("sudo apt update", "sudo apt install nginx -y");
+    const machineImage = ec2.MachineImage.fromSsmParameter(
+      "/aws/service/canonical/ubuntu/server/focal/stable/current/amd64/hvm/ebs-gp2/ami-id",
+      {
+        os: ec2.OperatingSystemType.LINUX,
+        userData,
+      }
+    );
+
     // Create the instance using the Security Group, AMI, and KeyPair defined in the VPC created
     const ec2Instance = new ec2.Instance(this, "Instance", {
       vpc,
       instanceType: ec2.InstanceType.of(
-        ec2.InstanceClass.T4G,
-        ec2.InstanceSize.MICRO
+        ec2.InstanceClass.T3,
+        ec2.InstanceSize.SMALL
       ),
-      machineImage: ami,
+      // instanceType: new ec2.InstanceType("t2.micro"),
+      machineImage: machineImage,
       securityGroup: securityGroup,
       // keyName: key.keyPairName,
       role: role,
@@ -142,18 +174,6 @@ export class CdkWorkshopStack extends cdk.Stack {
       value:
         "ssh -i cdk-key.pem -o IdentitiesOnly=yes ec2-user@" +
         ec2Instance.instancePublicIp,
-    });*/
-
-    /*AWS Amplify */
-    const amplifyApp = new CfnApp(this, "test-app", {
-      name: "your-amplify-console-app-name",
-      repository: "<github-repository-link>",
-      oauthToken: "<github-oauth-token>",
-    });
-
-    new CfnBranch(this, "MasterBranch", {
-      appId: amplifyApp.attrAppId,
-      branchName: "main", // you can put any branch here (careful, it will listen to changes on this branch)
     });
   }
 }
